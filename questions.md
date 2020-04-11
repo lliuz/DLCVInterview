@@ -709,6 +709,77 @@ a_function_requiring_decoration()
 
 装饰器通过查找装饰函数的返回值来调用内部的函数，传参到内部的函数可以通过 `*args,**kwargs` 进行，传参给装饰函数则是直接在 @ 语句后面加参数 `@a_new_decorator(a, b, c)`。
 
+#### Q37: 卷积的实现及其反向传播
+**Answer: ** 
+
+卷积的前向传播是通过 im2col 把输入的 feature ($C_{in} H_{in} W_{in}$) 转换成 $C_{in}K^2 \times H_{out} W _{out}$ 的矩阵，并且把 kernel ($C_{out}C_{in}K^2 $) reshape 成 $C_{out} \times C_{in} K^2$，通过调用矩阵乘法 gemm，获得的结果再进行 reshape 就可以了。前向传播就变成了 $y = WX + b$。
+
+反向传播：我们假定 y 后面到计算 loss 的所有变换叫做 f(y)，即 $l = f(y)$。
+
+那么 dl/dw = dl/df * X^T，其中 dl/df 的维度和 y 一样是 $C_{out} \times H_{out} W _{out}$, 另外 $X^T$ 为 im2col 获得的矩阵的转置，相乘之后就是 $C_{out} \times  C_{in} K^2$；另外 dl/dx = W^T * dl/df，乘出来的结果为  $C_{in}K^2 \times H_{out} W _{out}$ 的矩阵，需要 col2im 反映射回原始空间就得到了关于 X 的梯度。
+
+im2col 的实现并不会降低复杂度，但通过矩阵乘法库可以实现高速计算。
+
+#### Q38: 反卷积的实现及其问题
+**Answer: ** 
+
+gemm + col2im 实现：反卷积的实现实际上就可以通过互换前后向传播实现，权重转置乘输入就能得到 size 增大的输出。
+
+输入插空补 0 实现：对于 x 补零，0 的个数为反卷积放大倍数，再拿权重翻转 180° 以 stride = 1 来卷积即可，这种方法称作转置卷积。
+
+棋盘格效应与解决方案：当 `kernel_size` 无法被  `stride` 整除时, 反卷积就会出现这种不均匀重叠的现象。
+
+![1586527037995](dl_topics/convolution.assets/1586527037995.png)
+
+解决方案一是可以通过合理配置反卷积的参数(stride, pad, kernel size)，等效于亚像素卷积，但治标不治本。
+
+解决方案二是可以用上采样 + 卷积替代反卷积。
+
+#### Q39: LSTM 结构推导 
+**Answer: ** 
+
+首先确定每个时刻的输入输出 C 和隐藏状态 h，下图绘制了 C 的主干道：
+
+![1586592678175](questions.assets/1586592678175.png)
+
+> LSTM 比传统的 RNN 多了三个门，把上图中的三个 sigmoid 去掉就是常规 RNN 了，因此 **LSTM 的参数量是标准 RNN 的四倍**。
+
+计算过程为：拿上一时刻状态和当前时刻的输入计算三个门值，以及 cell state：
+
+遗忘门 $f_t$，输入门 $i_t$，输出门 $o_t$，cell state $\tilde{C}_t$ 
+$$
+\begin{aligned}
+f_{t} &=\sigma\left(W_{f} \cdot\left[h_{t-1}, x_{t}\right]+b_{f}\right) \\
+i_{t} &=\sigma\left(W_{i} \cdot\left[h_{t-1}, x_{t}\right]+b_{i}\right) \\
+o_{t} & =\sigma\left(W_{o}\left[h_{t-1}, x_{t}\right]+b_{o}\right) \\
+\tilde{C}_{t} &=\tanh \left(W_{C} \cdot\left[h_{t-1}, x_{t}\right]+b_{C}\right)
+\end{aligned}
+$$
+用三个门来更新当前的输出 $C_t$ 和状态 $h_t$：
+$$
+\begin{align}
+C_{t} &=f_{t} * C_{t-1}+i_{t} * \tilde{C}_{t} \\
+h_{t} & =o_{t} * \tanh \left(C_{t}\right) \\
+
+\end{align}
+$$
+
+#### Q40: LSTM 为什么能解决梯度问题
+
+**Answer: ** 
+
+推导 forget gate，input gate，cell state， hidden information 等的变化；因为 LSTM 有进有出且当前的 cell informaton 是通过 input gate 控制之后(通常是饱和的，也就是~0或~1，保证了梯度在时序上的隔离)叠加的，RNN是叠乘，因此 LSTM 可以**防止梯度消失或者爆炸**。
+
+#### Q41: GRU 结构推导
+
+**Answer: ** 
+
+![img](questions.assets/1338991-20181204191912925-1490105455.png)
+
+其中， rt 表示重置门，zt 表示更新门。
+
+GRU 不限制输入信息的传入，而是限制历史状态的保留。用更新门代替了 LSTM 中的输出门，
+
 
 
 #### Q: 目标检测发展史
