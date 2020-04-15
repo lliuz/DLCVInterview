@@ -120,49 +120,13 @@ $$
 
 ![tag](https://img.shields.io/badge/ML-1-brightgreen) 
 
-PCA 是为了降低特征的维度且减少特征之间的相关性。问题被转化成了，我们希望找出一组基向量（需要是标准正交基），数据在这组基向量构成的空间中表示时，任何两个属性间相关性为零。
+1. 数据矩阵 $X$  各个维度减去各自的均值；
 
-方差定义数据的离散程度：
-$$
-\operatorname{Var}(a)=\frac{1}{m} \sum_{i=1}^{m}\left(a_{i}-\mu\right)^{2}
-$$
-协方差表示两个向量之间的相关性：
-$$
-\operatorname{Cov}(a, b)=\frac{1}{m} \sum_{i=1}^{m}\left(a_{i}-\mu_{a}\right)\left(b_{i}-\mu_{b}\right)
-$$
+2. 求 SVD，得到 dxd 维的奇异值矩阵 
 
-1. **各个维度减去各自的均值**
+   > 数据矩阵是 nxd 的话求右奇异值矩阵， dxn 的话求左奇异值矩阵)，按奇异值大小从大到小排；
 
-   这一步是因为后面求方差和协方差时会要减均值，干脆提前减了，方便矩阵操作。
-   $$
-   \begin{aligned}
-   \operatorname{Var}(a) &=\frac{1}{m} \sum_{i=1}^{m} a_{i}^{2} \\
-   \operatorname{Cov}(a, b) &=\frac{1}{m} \sum_{i=1}^{m} a_{i} b_{i}
-   \end{aligned}
-   $$
-
-2. **计算矩阵的协方差矩阵（多个输入需要求平均）**
-
-   数据 A 的协方差矩阵：$\frac{1}{m} A^T  \cdot  A$ 是一个实对称矩阵，对角线上的值是其方差，其他值对应两个属性之间的协方差。
-
-   我们的**目的是找到一个新的基向量表示的空间 P** ，使数据 A 在 P 下的新表示 Z = AP 的各个属性相关性最小，
-
-   也就是 Z 的协方差矩阵 $\frac{1}{m} Z^{T} \cdot Z$ 是对角阵 (除对角线外其余元素为0)。
-
-3. **计算协方差矩阵的特征值和特征向量**
-
-   Z 的协方差矩阵展开：
-   $$
-   \begin{aligned}
-   \frac{1}{m} Z^{T} Z &=\frac{1}{m}(A P)^{T} A P \\
-                       &=\frac{1}{m} P^{T} A^{T} A P \\
-   &=P^{T}\left(\frac{1}{m} A^{T} A\right) P
-   \end{aligned}
-   $$
-   由 SVD 相关内容可以知道，只要 $P$ 是有 A 的特征向量所组成的矩阵 $U$ 就是满足 $Z$ 的协方差矩阵是对角阵。
-
-   - $U^TA$ 得到新的特征的数值;
-   - 如果需要降维，按特征值从大到小排列，选取前 $k$ 个特征值，重新计算特征向量即可。
+3. 取奇异值矩阵的前 k 个列组成投影矩阵，$X_{n \times k}^{\prime}= X_{n \times d} V_k^T$
 
 [补充阅读](https://kknews.cc/zh-hk/education/3b98823.html)
 
@@ -276,9 +240,9 @@ whether we should use the mean and variance computed on the **original dataset**
 
 **Answer: ** 
 
-BN 原文是放在激活函数前面的，但这个问题仍然有争论。
+BN 原文是放在激活函数前面的，但这个问题仍然有争论，可以看做是一个超参，对于标准化针对的对象不同。
 
-最近的论文中更多使用 ReLU-Conv-BN 的形式，也就是 BN 在激活函数前。
+ResNet 中使用 ReLU-Conv-BN 的形式，也就是 BN 在激活函数前，DenseNet 上使用 ReLU-BN-Conv 的形式，也就是激活函数在 BN 前。
 
 #### Q16: 梯度消失爆炸的原因及解决方法
 
@@ -818,6 +782,95 @@ sigmoid 用在了各种 gate 上，产生 0~1 之间的值，这个一般只有 
 另外举一个例子：傅里叶级数的定义是任何周期函数都可以用 sin/cos 构成的无穷级数来表示，那么神经元无限多的时候，是可以近似任意函数(定义域不无限)的。
 
 更多讨论见 [知乎回答](https://www.zhihu.com/question/268384579/answer/540793202)。
+
+#### Q47: PCA 的优缺点及其变种
+**Answer: ** 
+
+PCA 算法的主要优点有：
+
+1. 仅仅需要以方差衡量信息量，不受数据集以外的因素影响。　
+
+2. 各主成分之间正交，可消除原始数据成分间的相互影响的因素。
+
+3. 计算方法简单，主要运算是特征值分解，易于实现。
+
+PCA 算法的主要缺点有：
+
+1. 主成分各个特征维度的含义具有一定的模糊性，不如原始样本特征的解释性强。
+
+2. 方差小的非主成分也可能含有对样本差异的重要信息，因降维丢弃可能对后续数据处理有影响。
+
+为了克服PCA的一些缺点，出现了很多PCA的变种，如解决非线性降维的 KPCA，解决内存限制的增量 PCA 方法 Incremental PCA，以及解决稀疏数据降维的 PCA 方法 Sparse PCA 等。
+
+#### Q48: PCA 推导证明 
+**Answer: ** 
+
+我们的目的是找到一个新的基向量表示的空间 $P_{d \times d}$ ，使数据 $A$ 在 $P$ 下的新表示 $Z = AP$ 的各个属性相关性最小，也就是 $Z$ 的协方差矩阵 $\frac{1}{m} Z^{T} \cdot Z$ 是对角阵 (除对角线外其余元素为0)。
+
+这涉及到一个优化问题：如何找到 $P$ 使得 $Z = AP$ 的协方差矩阵是对角阵，
+
+我们把 $Z$ 的协方差矩阵展开：
+$$
+\begin{aligned}
+\frac{1}{m} Z^{T} Z &=\frac{1}{m}(A P)^{T} A P \\
+                    &=\frac{1}{m} P^{T} A^{T} A P \\
+&=P^{T}\left(\frac{1}{m} A^{T} A\right) P \\
+& = P^T C P
+\end{aligned}
+$$
+优化问题重写为：
+$$
+\begin{aligned}
+&\arg\max_{P} \operatorname{tr}\left(P^TCP \right)\\
+&\text { s.t. } \quad P^T P=I
+\end{aligned}
+$$
+使用拉格朗日乘子法：
+$$
+J(P) = \operatorname{tr}(P^TCP) + \lambda(P^TP - I)
+$$
+对 $P$ 求导可得：
+$$
+CP + \lambda P = 0
+$$
+也就是说 $P$ 矩阵是 $C$ 矩阵的特征向量组成的矩阵。
+
+#### Q49: SVD 暴力求解推导
+
+**Answer: ** 
+
+假设我们的矩阵 $A$ 是一个 $m×n$ 的矩阵，那么我们定义矩阵 $A$ 的 SVD 为：
+$$
+A=U \Sigma V^{T}
+$$
+其中 $U$ 是一个 $m \times m$ 的酉矩阵， $V$ 是一个 $n \times n$ 的酉矩阵， $\Sigma$ 是一个 $m \times n$ 的矩阵，除了主对角线上的元素以外全为0，主对角线上的每个元素都称为奇异值。
+
+首先我们假设不知道这三个矩阵的具体内容，对于 $A=U \Sigma V^{T}$，我们有 $A^T = V\Sigma^TU^T$，由此，
+$$
+AA^T = U\Sigma V^TV\Sigma^TU^T = U\Sigma^2U^T
+$$
+上式证明使用了 $V^TV = I$ 和 $\Sigma = \Sigma^T$。同理，
+$$
+A^TA = V\Sigma^2V^T
+$$
+也就是说 $U$ 矩阵是 $AA^T$ 矩阵的特征向量组成的矩阵，而 $V$ 矩阵是 $A^TA$ 的特征向量组成的矩阵。
+
+进一步我们还可以看到特征值矩阵等于奇异值矩阵的平方，即 $\sigma_i = \sqrt{\lambda_i}$。
+
+#### Q50: 为什么 PCA 中使用 SVD
+**Answer: ** 
+
+PCA 降维需要找到样本协方差矩阵 $X^TX$ 的最大的 $k$ 个特征向量，然后用这最大的 $k$ 个特征向量张成的矩阵来做低维投影降维。可以看出，在这个过程中需要先求出协方差矩阵 $X^TX$ ，当样本数多样本特征数也多的时候，这个计算量是很大的。
+
+而 SVD 中类似的求了 $A^TA$ 矩阵的特征向量张成的矩阵，就是右奇异值矩阵 $V$，
+$$
+X_{n \times k}^{\prime}= X_{n \times d} V_k^T
+$$
+并且有一些 SVD 的实现算法可以不通过先求出协方差矩阵直接获得分解结果**，因此一般 PCA 的背后实现都是通过 SVD 的。
+
+
+
+
 
 #### Q: 多线程与多进程的区别
 
