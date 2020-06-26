@@ -25,7 +25,7 @@
 W = tf.Variable(np.random.randn(node_in, node_out)) / np.sqrt(node_in)
 ```
 
-特性：会对用 tanh 的网络保持各层输出分布相似，但对于 ReLU 还是会存在越来越接近 0 的分布。
+特性：会对用 tanh 的网络保持各层输出分布相似，但对于 ReLU 还是会存在越来	越接近 0 的分布。
 
 3. He Initialization
 
@@ -168,6 +168,8 @@ $$
 h=f\left(\bold{g}\cdot\frac{\bold{x}-\bold{\mu}}{\bold{\sigma}}+\bold{b}\right)
 $$
 其中， $\mu$ 是**平移参数**（shift parameter），  $\sigma$ 是**缩放参数**（scale parameter）。 $\bold{b}$ 是 **再平移参数**（re-shift parameter）， $\bold{g}$ 是**再缩放参数**（re-scale parameter）。最终得到的数据符合均值为 $\bold{b}$ 、方差为 $\bold{g}^2$  的分布。
+
+为什么 BN 后需要加入重构步骤：简单地对样本进行 normalize 处理会把数据限制在均值0，方差1的范围内，会**限制模型的表达能力**，比如对于 Sigmoid 来说，只使用了其线性部分。
 
 #### Q10: BN 的缺点及其衍生的特性
 
@@ -868,9 +870,35 @@ X_{n \times k}^{\prime}= X_{n \times d} V_k^T
 $$
 并且有一些 SVD 的实现算法可以不通过先求出协方差矩阵直接获得分解结果**，因此一般 PCA 的背后实现都是通过 SVD 的。
 
+#### Q51: 如何寻找哪些像素是 loss 更敏感
+**Answer: ** 
 
+- 随机 mask 掉一些区域或改变一些区域的值，看  loss 或者精度的变化；
 
+CAM  / GradCAM 之类在全连接之前用 GAP 把 feature map 压缩成一维，
 
+#### Q52:  Python 中的 map 和 reduce 函数
+**Answer: ** 
+
+map 方法实现函数对可迭代对象之间的映射, 并且执行。
+
+```python
+# 串行
+map(float, [1,2,3,4,5])
+# 并行多进程
+from multiprocessing import Pool
+# 并行多线程
+from multiprocessing.dummy import Pool 
+pool = Pool(4)
+pool.map(float, [1,2,3,4,5])
+```
+
+reduce 方法实现的是函数返回值作为下一次的第一个输入
+
+```python
+from functools import reduce
+reduce(sum, [1,2,3,4,5])	# return 15
+```
 
 #### Q: 多线程与多进程的区别
 
@@ -884,55 +912,7 @@ $$
 
 **Answer: ** 
 
-**RCNN:** 
-
-- 用 AlexNet 对 Selective Search 算法每张图选出的 ~2k 个 proposal (裁剪+拉伸后)提取特征，对特征送入 SVM 分类并送入回归网络回归位置，之后做 NMS。
-
-- 依次训练三个部分：AlexNet(finetune)，SVM，位置回归网络。
-
-- 正负样本的选取规则：
-
-- 位置回归的形式为：
-
-  > 以下问题可以参考七月
-  >
-  > Q: Selective Search 的流程
-  >
-  > Q: bbox 回归的细节
-  >
-  > Q: 手写 NMS 并分析复杂度以及优化
-  >
-  > Q: 什么是 anchor
-
-**SPP-Net:**
-
-- 提出通过 Spatial Pyramid Pooling 替换 RCNN 中的裁剪 + 拉伸。
-
-  ![1585924595496](questions.assets/1585924595496.png) 
-
-**Fast R-CNN:**
-
-- 将 SPP 换成了 RoI Pooling，SPP 的特征(网格)是多尺寸 cat 的，而 RoI Pooling 是单一尺度的 max pooling，因为实验发现多尺度提升并不大，单尺度节省时间。
-- 用网络代替了 SVM，在最后的卷积层上设置 RoI Pooling 后接两个分支回归位置和分类。
-
-**Faster R-CNN:**
-
-- 提出 RPN 取代 Selective Search，
-- Faster R-CNN 的正负样本选取：
-
-**HyperNet, FPN:**
-
-- 
-
-SSD, YOLO, DSSD:
-
-
-
-NMS, Soft-NMS:
-
-
-
-EfficientDet
+**
 
 #### Q: NAS 前沿工作
 ![tag](https://img.shields.io/badge/DL-1-brightgreen) 
@@ -1109,6 +1089,8 @@ torch.nn.BatchNorm2d(num_features, eps=1e-05, momentum=0.1, affine=True, track_r
 **Answer: ** 
 
 fpn:https://medium.com/@jonathan_hui/understanding-feature-pyramid-networks-for-object-detection-fpn-45b227b9106c
+
+
 
 
 
