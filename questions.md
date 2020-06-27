@@ -1057,9 +1057,11 @@ https://blog.csdn.net/MBuger/article/details/62461172
 
 
 
+#### Q: 为什么 BN 的统计量 shape 只是 C, 而没有 HW
 
+https://stats.stackexchange.com/questions/304680/is-there-any-explanation-for-the-spatial-batch-normalization
 
-
+原文中写到是为了**类比卷积的特性**：对于不同的空间位置使用相同的统计量。所以一般的 BN 都是对 B, H, W 求统计量。但也有 SpatialBatchNormalization 是对于每个 spatial location 求 seperate 的统计量的。
 
 
 
