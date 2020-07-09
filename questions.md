@@ -1175,6 +1175,44 @@ torch.nn.BatchNorm2d(num_features, eps=1e-05, momentum=0.1, affine=True, track_r
 
 
 
+#### Q:
+
+SGM 的流程 https://github.com/ethan-li-coding/SemiGlobalMatching
+
+- 基于census-transform计算代价，并进行4邻域和8邻域的代价聚合；
+
+- winner-to-all(WTA，胜者通吃)求解出每个像素的视差；
+- 后处理：前后一致性检查，唯一性检查，剔除小连通区，中值滤波；
+
+```
+def meansBlur(src, ksize):
+    '''
+    :param src: input image
+    :param ksize:kernel size
+    :return dst: output image
+    '''
+    dst = np.copy(src)  #创建输出图像
+    kernel = np.ones((ksize, ksize))  # 卷积核
+    padding_num = int((ksize - 1) / 2)  #需要补0
+    dst = np.pad(dst, (padding_num, padding_num), mode="constant", constant_values=0)
+    w, h = dst.shape
+    dst = np.copy(dst)
+    for i in range(padding_num, w - padding_num):
+        for j in range(padding_num, h - padding_num):
+            dst[i, j] = np.sum(kernel * dst[i - padding_num:i + padding_num + 1, j - padding_num:j + padding_num + 1]) \
+                        // (ksize ** 2)
+    dst = dst[padding_num:w - padding_num, padding_num:h - padding_num]  #把操作完多余的0去除，保证尺寸一样大
+    return dst
+```
+
+
+
+
+
+
+
+
+
 #### Q: FPN 理解
 
 ![tag](https://img.shields.io/badge/DL-1-brightgreen) 
