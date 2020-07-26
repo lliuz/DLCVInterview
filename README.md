@@ -16,8 +16,6 @@ https://www.julyedu.com/question/index/type/1
 
 ### TODO
 
-#### Ring all-reduce 流程介绍
-
 #### 数据并行框架总结
 
 #### 常见目标检测网络(FRCNN, RetinaNet, SSD, YOLOv1~v4, [anchor free](https://zhuanlan.zhihu.com/p/62103812))
