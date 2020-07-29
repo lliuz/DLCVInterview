@@ -53,6 +53,26 @@ weight decay 如何设置
 
 
 
+### FCOS
+
+Retinanet 结构，回归三个分支：分类，回归，centerness。
+
+在 gt box 分配到的 feature level 的每个正样本位置都回归 l t r b 四个位置值，最后 nms 时的置信度为分类得分 × centerness值。
+
+Centerness回归目标为 min/max 形式，即以 GT 中心点为峰值点的 heatmap。
+
+> 为了解决 gt box 存在的重叠问题, FCOS提出两种方法：
+>
+> 1. FCOS 不像基于 anchor 的检测器在不同的特征层中使用不同 size 的 anchor，在 FCOS 中直接对每个 feature level 分配了回归范围 $[m_{i-1}, m_i]$，$m_i$ 为第 i level 能回归的最大 size。m2~m7分别为 0, 64, 128, 256, 512, inf。
+>
+>    分配 anchor 的原则是: 如果一个 gt box 的 $\max(l, t, r, b) > m_i \or \min(l, t, r, b) < m_{i-1}$ 则对于这个 gt box 对于这个 level 设为负样本。 
+>
+> 2.	按 level 分配的方法已经能够一定程度上缓解重叠问题，但如果size相近的重叠还是没办法。直接选取最小的ground truth作为其回归目标。
+
+> Trick:
+>
+> 根据论文，在不同的特征层中共享head，不仅使得检测器的参数更有效，同时提升了检测性能。不同的特征层级要求回归不同的size范围，因此在不同的特征层中使用相同的head是不合理的，因此使用exp(six)替换原先的exp(x)，si是一个可训练的标量，不同的层级中可以自动调整，最终提高一点性能。
+
 常见 anchor 正负样本分配原则
 
 ### FreeAnchor, ATSS
@@ -403,3 +423,48 @@ https://zhuanlan.zhihu.com/p/59396559
 
 ### Transformer
 
+
+
+### 分类网络
+
+#### ResNet 和 DenseNet 及其不同
+
+那么ResNet解决了什么问题呢？
+
+训练深层的神经网络，会遇到梯度消失的问题，影响了网络的收敛，但是这很大程度已经被标准初始化（normalized initialization）和BN（Batch Normalization）所处理。
+
+当深层网络能够开始收敛，会引起网络退化（degradation problem）问题，即随着网络深度增加，准确率会饱和，甚至下降。这种退化不是由过拟合引起的，因为在适当的深度模型中增加更多的层反而会导致更高的训练误差。
+
+ResNet就通过引入深度残差连接来解决网络退化的问题，从而解决深度CNN模型难训练的问题。
+
+#### 相同层数，densenet和resnet哪个好，为什么？
+
+#### resnet两种结构具体怎么实现，bottleneck的作用，为什么可以降低计算量，resnet参数量和模型大小
+
+#### Inception系列的演化
+
+#### Mobilenet v1 v2，shufflenet
+
+### 卷积层
+
+#### 卷积特点
+
+局部连接，权值共享
+
+#### 卷积, 反卷积, 扩张卷积, 可变形卷积, 计算过程
+
+#### 深度可分离卷积, 原理，参数量计算量，口述计算，减少了多少
+
+#### deformable conv 怎么做
+
+具体怎么学的，对偏移有没有什么限制
+
+#### 1x1卷积作用
+
+变换 channel 数
+
+通道融合
+
+
+
+tensorrt怎么量化，float32怎么变int8，怎么变回来
